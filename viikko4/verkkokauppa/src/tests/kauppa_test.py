@@ -41,6 +41,7 @@ class TestKauppa(unittest.TestCase):
         # alustetaan self.kauppa
         self.kauppa = Kauppa(self.varasto_mock, self.pankki_mock, self.viitegeneraattori_mock)
 
+
     def test_ostoksen_paaytyttya_pankin_metodia_tilisiirto_kutsutaan(self):
         # tehdään ostokset
         self.kauppa.aloita_asiointi()
@@ -49,6 +50,7 @@ class TestKauppa(unittest.TestCase):
 
         self.pankki_mock.tilisiirto.assert_called()
 
+
     def test_ostoksen_paaytyttya_pankin_metodia_tilisiirto_kutsutaan_nimi_ja_tili_oikein(self):
         
         self.kauppa.aloita_asiointi()
@@ -56,6 +58,7 @@ class TestKauppa(unittest.TestCase):
         self.kauppa.tilimaksu("pekka", "12345")
 
         self.pankki_mock.tilisiirto.assert_called_with("pekka", ANY, "12345", ANY, 5)
+
 
     def test_ostoksen_paaytyttya_pankin_metodia_tilisiirto_kutsutaan_nimi_ja_tili_oikein_jos_korissa_kaksi_eri(self):
         self.kauppa.aloita_asiointi()
@@ -74,10 +77,45 @@ class TestKauppa(unittest.TestCase):
 
         self.pankki_mock.tilisiirto.assert_called_with("pekka", ANY, "12345", ANY, 10)
 
+
     def test_ostoksen_paaytyttya_pankin_metodia_tilisiirto_kutsutaan_nimi_ja_tili_oikein_jos_yksi_loppunut_tuote_ja_yksi_ei(self):
         self.kauppa.aloita_asiointi()
         self.kauppa.lisaa_koriin(1)
         self.kauppa.lisaa_koriin(3)
+        self.kauppa.tilimaksu("pekka", "12345")
+
+        self.pankki_mock.tilisiirto.assert_called_with("pekka", ANY, "12345", ANY, 5)
+
+
+    def test_uusi_viitenumero_jos_jokaista_maksua_kohtaan(self):
+        viitegeneraattori_mock = Mock(wraps=Viitegeneraattori())
+        self.kauppa = Kauppa(self.varasto_mock, self.pankki_mock, viitegeneraattori_mock)
+
+        self.kauppa.aloita_asiointi()
+        self.kauppa.lisaa_koriin(1)
+        self.kauppa.lisaa_koriin(3)
+        self.kauppa.tilimaksu("pekka", "12345")
+
+        self.assertEqual(viitegeneraattori_mock.uusi.call_count, 1)
+    
+        self.kauppa.lisaa_koriin(1)
+        self.kauppa.tilimaksu("pekka", "12345")
+
+        self.assertEqual(viitegeneraattori_mock.uusi.call_count, 2)
+
+        self.kauppa.lisaa_koriin(1)
+        self.kauppa.lisaa_koriin(1)
+        self.kauppa.tilimaksu("pekka", "12345")
+
+        self.assertEqual(viitegeneraattori_mock.uusi.call_count, 3)
+
+
+    def test_aloita_asiointi_nollaa_ostokset(self):
+        self.kauppa.aloita_asiointi()
+        self.kauppa.lisaa_koriin(1)
+        self.kauppa.lisaa_koriin(3)
+        self.kauppa.aloita_asiointi()
+        self.kauppa.lisaa_koriin(1)
         self.kauppa.tilimaksu("pekka", "12345")
 
         self.pankki_mock.tilisiirto.assert_called_with("pekka", ANY, "12345", ANY, 5)
